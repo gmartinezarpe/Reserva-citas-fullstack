@@ -1,30 +1,37 @@
-import { Form, Input, DatePicker, Button, Card, message } from 'antd';
-// 1. Importamos Axios
+import { Form, Input, DatePicker, Button, Card, message, Modal, QRCode } from 'antd';
 import axios from 'axios';
+import { useState } from 'react';
+
 
 export const AppointmentForm = () => {
-    // 2. Agregamos 'async' porque la petición a internet toma tiempo
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [appointmentData, setAppointmentData] = useState<any>(null);
+
     const onFinish = async (values: any) => {
         try {
-            // 3. Le decimos a Axios que envíe los datos al Backend
             const response = await axios.post('http://localhost:4000/api/appointments', {
                 clientName: values.clientName,
                 service: values.service,
-                // Formateamos la fecha a texto para enviarla segura
                 date: values.dateTime.format('YYYY-MM-DD'),
-                time: values.dateTime.format('HH:mm')
+                time: values.dateTime.format('HH:mm'),
+                email: values.email.toLowerCase()
             });
 
-            // 4. Si todo salió bien, le avisamos al usuario
             message.success('¡Tu cita fue agendada con éxito!');
+            setAppointmentData(response.data);
+            setIsModalVisible(true);
             console.log('Respuesta del servidor:', response.data);
 
         } catch (error) {
-            // Si el backend falla o está apagado
             message.error('Hubo un error al guardar tu cita. Verifica si el servidor está encendido.');
             console.error('Error:', error);
         }
     };
+
+    // Preparamos la información que tendrá el QR por dentro
+    const qrText = appointmentData
+        ? `Cita Confirmada\nCliente: ${appointmentData.clientName}\nServicio: ${appointmentData.service}\nFecha: ${appointmentData.date.substring(0, 10)}\nHora: ${appointmentData.time}`
+        : 'Generando información...';
 
     return (
         <Card title="Agendar Nueva Cita" bordered={false} style={{ maxWidth: 400, margin: '0 auto' }}>
@@ -38,10 +45,31 @@ export const AppointmentForm = () => {
                 <Form.Item label="Fecha y Hora" name="dateTime" rules={[{ required: true, message: 'Selecciona fecha y hora' }]}>
                     <DatePicker showTime style={{ width: '100%' }} format="YYYY-MM-DD HH:mm" />
                 </Form.Item>
+                <Form.Item label="Correo electrónico" name="email" rules={[{ required: true, message: 'Por favor ingresa tu correo electrónico' }]}>
+                    <Input placeholder="Ej. [EMAIL_ADDRESS]" />
+                </Form.Item>
                 <Button type="primary" htmlType="submit" block>
                     Agendar Cita
                 </Button>
             </Form>
+            <Modal
+                title="Código QR de tu Cita"
+                open={isModalVisible}
+                onCancel={() => setIsModalVisible(false)}
+                footer={[
+                    <Button key="close" onClick={() => setIsModalVisible(false)}>
+                        Cerrar
+                    </Button>
+                ]}
+            >
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+                    {/* El QR ahora contiene todo el texto formateado */}
+                    <QRCode value={qrText} size={256} />
+                </div>
+                <p style={{ textAlign: 'center', marginTop: '10px' }}>
+                    Escanea este código para ver los detalles de tu cita.
+                </p>
+            </Modal>
         </Card>
     );
 };
