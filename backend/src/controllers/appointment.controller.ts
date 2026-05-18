@@ -21,7 +21,10 @@ export const createAppointment = async (req: Request, res: Response) => {
     const { clientName, service, date, time, email } = req.body;
     const newAppointment = new Appointment({ clientName, service, date, time, email });
     await newAppointment.save();
-    const qrText = `Cita Confirmada\nCliente: ${clientName}\nServicio: ${service}\nFecha: ${date.substring(0, 10)}\nHora: ${time}`;
+    const startDate = new Date(`${date.substring(0, 10)}T${time}:00`);
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+    const formatGoogleDate = (d: Date) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
+    const qrText = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(service)}&dates=${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}&details=${encodeURIComponent("Cita reservada por " + clientName)}`;
     const qrImage = await QRCode.toDataURL(qrText);
 
     // Si no tenemos cuenta, la creamos (tarda un poco). Si ya tenemos, la usamos (instantáneo).
@@ -29,7 +32,6 @@ export const createAppointment = async (req: Request, res: Response) => {
       console.log("Creando cuenta de correo de prueba (puede tardar unos segundos)...");
       testAccountCache = await nodemailer.createTestAccount();
     }
-
     const transporter = nodemailer.createTransport({
       host: "smtp.ethereal.email",
       port: 587,
@@ -39,26 +41,33 @@ export const createAppointment = async (req: Request, res: Response) => {
         pass: testAccountCache.pass,
       },
     });
+
     const info = await transporter.sendMail({
-      from: '"CitasApp" <no-reply@citasapp.com>', // Quien lo envía
-      to: email, // El correo del cliente
+      from: '"CitasApp" <no-reply@citasapp.com>',
+      to: email,
       subject: "Confirmación de tu cita y Código QR",
-      text: "Hola, aquí tienes los detalles de tu cita y tu código QR adjunto.",
       html: `
         <h2>¡Hola ${clientName}!</h2>
         <p>Tu cita para <b>${service}</b> ha sido confirmada.</p>
         <p><b>Fecha:</b> ${date.substring(0, 10)}</p>
         <p><b>Hora:</b> ${time}</p>
-        <p>Adjunto encontrarás tu código QR para el día de la cita.</p>
+        <p>Escanea este código QR con la cámara de tu celular para agregarlo a tu agenda de Google Calendar:</p>
+        
+       
+        <div style="text-align: center; margin: 20px 0;">
+          <img src="cid:codigoqr" alt="QR Code" style="width: 200px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+        </div>
       `,
       attachments: [
         {
           filename: 'tu-codigo-qr.png',
-          path: qrImage // Aquí pegamos la imagen que creamos en la Pieza 2
+          path: qrImage,
+          cid: 'codigoqr'
         }
       ]
     });
-    // 8. Imprimimos en la consola el enlace mágico para ver el correo
+
+
     console.log("¡Correo enviado! Haz clic aquí para verlo: %s", nodemailer.getTestMessageUrl(info));
     // 9. Le decimos al frontend que terminamos con éxito
     res.status(201).json(newAppointment);

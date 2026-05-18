@@ -1,11 +1,10 @@
-import { Form, Input, DatePicker, Button, Card, message, Modal, QRCode } from 'antd';
+import { Form, Input, DatePicker, Button, Card, message } from 'antd';
 import axios from 'axios';
-import { useState } from 'react';
+
 
 
 export const AppointmentForm = () => {
-    const [isModalVisible, setIsModalVisible] = useState(false);
-    const [appointmentData, setAppointmentData] = useState<any>(null);
+
 
     const onFinish = async (values: any) => {
         try {
@@ -18,8 +17,7 @@ export const AppointmentForm = () => {
             });
 
             message.success('¡Tu cita fue agendada con éxito!');
-            setAppointmentData(response.data);
-            setIsModalVisible(true);
+
             console.log('Respuesta del servidor:', response.data);
 
         } catch (error) {
@@ -28,10 +26,7 @@ export const AppointmentForm = () => {
         }
     };
 
-    // Preparamos la información que tendrá el QR por dentro
-    const qrText = appointmentData
-        ? `Cita Confirmada\nCliente: ${appointmentData.clientName}\nServicio: ${appointmentData.service}\nFecha: ${appointmentData.date.substring(0, 10)}\nHora: ${appointmentData.time}`
-        : 'Generando información...';
+
 
     return (
         <Card title="Agendar Nueva Cita" bordered={false} style={{ maxWidth: 400, margin: '0 auto' }}>
@@ -52,24 +47,7 @@ export const AppointmentForm = () => {
                     Agendar Cita
                 </Button>
             </Form>
-            <Modal
-                title="Código QR de tu Cita"
-                open={isModalVisible}
-                onCancel={() => setIsModalVisible(false)}
-                footer={[
-                    <Button key="close" onClick={() => setIsModalVisible(false)}>
-                        Cerrar
-                    </Button>
-                ]}
-            >
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
-                    {/* El QR ahora contiene todo el texto formateado */}
-                    <QRCode value={qrText} size={256} />
-                </div>
-                <p style={{ textAlign: 'center', marginTop: '10px' }}>
-                    Escanea este código para ver los detalles de tu cita.
-                </p>
-            </Modal>
+
         </Card>
     );
 };
