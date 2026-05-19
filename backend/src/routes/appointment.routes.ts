@@ -1,13 +1,14 @@
 import { Router } from 'express';
-import { getAppointments, createAppointment, deleteAppointment } from '../controllers/appointment.controller';
+import { getAppointments, createAppointment, deleteAppointment, updateAppointment } from '../controllers/appointment.controller';
 
 const router = Router();
 
 router.route('/')
   .get(getAppointments)
-  .post(createAppointment)
+  .post(createAppointment);
 
 router.route('/:id')
-  .delete(deleteAppointment);
+  .delete(deleteAppointment)
+  .put(updateAppointment);
 
 export default router;

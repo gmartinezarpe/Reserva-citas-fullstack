@@ -1,4 +1,3 @@
-// frontend/src/pages/HomePage.tsx
 import { Row, Col, Card, Typography, Button } from 'antd';
 import { CalendarOutlined, ClockCircleOutlined, UserOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { AppointmentForm } from '../components/Appointmentform';
